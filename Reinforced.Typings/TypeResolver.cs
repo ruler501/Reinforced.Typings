@@ -2,13 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using Reinforced.Typings.Ast;
 using Reinforced.Typings.Ast.TypeNames;
 using Reinforced.Typings.Attributes;
 using Reinforced.Typings.Exceptions;
-using Reinforced.Typings.Generators;
-using Reinforced.Typings.ReferencesInspection;
 
 namespace Reinforced.Typings
 {
@@ -20,6 +17,7 @@ namespace Reinforced.Typings
         private static readonly RtSimpleTypeName AnyType = new RtSimpleTypeName("any");
         private static readonly RtSimpleTypeName NumberType = new RtSimpleTypeName("number");
         private static readonly RtSimpleTypeName StringType = new RtSimpleTypeName("string");
+        private static readonly RtSimpleTypeName UnknownType = new RtSimpleTypeName("unknown");
 
         /// <summary>
         /// Hash set of all numeric types
@@ -93,18 +91,25 @@ namespace Reinforced.Typings
             {typeof (decimal), NumberType}
         };
 
-        private readonly ExportContext _context;
+        private readonly RtSimpleTypeName _anyOrUnknown;
+
+        private ExportContext Context
+        {
+            get { return _file.Context; }
+        }
+
         private readonly ExportedFile _file;
-        private readonly ReferenceInspector _refInspector;
 
         /// <summary>
         ///     Constructs new type resolver
         /// </summary>
-        internal TypeResolver(ExportContext context, ExportedFile file, ReferenceInspector refInspector)
+        internal TypeResolver(ExportedFile file)
         {
-            _context = context;
             _file = file;
-            _refInspector = refInspector;
+
+            _anyOrUnknown = _file.Context.Global.UnresolvedToUnknown
+                        ? UnknownType
+                        : AnyType;            
         }
 
         private RtTypeName[] GetConcreteGenericArguments(Type t, Dictionary<string, RtTypeName> materializedGenerics = null)
@@ -170,12 +175,12 @@ namespace Reinforced.Typings
 
         internal RtTypeName ResolveTypeNameInner(Type t, Dictionary<string, RtTypeName> materializedGenerics = null)
         {
-            var substitution = _context.Project.Substitute(t, this);
+            var substitution = Context.Project.Substitute(t, this);
             if (substitution != null) return substitution; // order important!
 
-            if (_context.CurrentBlueprint != null)
+            if (Context.CurrentBlueprint != null)
             {
-                var localSubstitution = _context.CurrentBlueprint.Substitute(t, this);
+                var localSubstitution = Context.CurrentBlueprint.Substitute(t, this);
                 if (localSubstitution != null) return localSubstitution;
             }
             if (t.IsGenericParameter)
@@ -191,36 +196,49 @@ namespace Reinforced.Typings
 
             if (materializedGenerics == null && _resolveCache.ContainsKey(t)) return _resolveCache[t];
 
-            var bp = _context.Project.Blueprint(t, false);
-
-            var td = bp == null ? null : bp.TypeAttribute;
-            if (td != null)
+            var bp = Context.Project.Blueprint(t, false);
+            if (bp != null && bp.ThirdParty != null)
             {
-                var ns = t.Namespace;
-                if (!td.IncludeNamespace) ns = string.Empty;
-                var result = bp.GetName(GetConcreteGenericArguments(t, materializedGenerics));
-
-                if (_context.Global.UseModules)
+                var result = bp.GetName(bp.IsExportedExplicitly ? null : GetConcreteGenericArguments(t, materializedGenerics));
+                if (Context.Global.UseModules) _file.EnsureImport(t, result.TypeName);
+                _file.EnsureReference(t);
+                return Cache(t, result);
+            }
+            else
+            {
+                var declaration = bp == null ? null : bp.TypeAttribute;
+                if (declaration != null)
                 {
-                    var import = _refInspector.EnsureImport(t, result.TypeName, _file);
-                    if (_context.Global.DiscardNamespacesWhenUsingModules) ns = string.Empty;
-                    if (import == null || !import.IsWildcard)
+                    var ns = t.Namespace;
+                    if (!string.IsNullOrEmpty(declaration.Namespace)) ns = declaration.Namespace;
+                    if (!declaration.IncludeNamespace) ns = string.Empty;
+                    var result = bp.GetName(bp.IsExportedExplicitly ? null : GetConcreteGenericArguments(t, materializedGenerics));
+
+                    if (Context.Global.UseModules)
                     {
+                        var import = _file.EnsureImport(t, result.TypeName);
+                        if (Context.Global.DiscardNamespacesWhenUsingModules) ns = string.Empty;
+                        if (import == null || !import.IsWildcard)
+                        {
+                            result.Prefix = ns;
+                            return Cache(t, result);
+                        }
+
+                        result.Prefix = string.IsNullOrEmpty(ns)
+                            ? import.WildcardAlias
+                            : string.Format("{0}.{1}", import.WildcardAlias, ns);
+                        return Cache(t, result);
+                    }
+                    else
+                    {
+                        _file.EnsureReference(t);
+                        if (!string.IsNullOrEmpty(declaration.Namespace)) ns = declaration.Namespace;
                         result.Prefix = ns;
                         return Cache(t, result);
                     }
-
-                    result.Prefix = string.IsNullOrEmpty(ns) ? import.WildcardAlias : string.Format("{0}.{1}", import.WildcardAlias, ns);
-                    return Cache(t, result);
-                }
-                else
-                {
-                    _refInspector.EnsureReference(t, _file);
-                    if (!string.IsNullOrEmpty(td.Namespace)) ns = td.Namespace;
-                    result.Prefix = ns;
-                    return Cache(t, result);
                 }
             }
+
             if (t.IsNullable())
             {
                 return ResolveTypeName(t.GetArg());
@@ -234,17 +252,18 @@ namespace Reinforced.Typings
             {
                 if (!t._IsGenericType())
                 {
-                    _context.Warnings.Add(ErrorMessages.RTW0007_InvalidDictionaryKey.Warn(AnyType, t));
+                    Context.Warnings.Add(ErrorMessages.RTW0007_InvalidDictionaryKey.Warn(AnyType, t));
                     return Cache(t, new RtDictionaryType(AnyType, AnyType));
                 }
                 var gargs = t._GetGenericArguments();
+                bool isKeyEnum = gargs[0]._IsEnum();
                 var key = ResolveTypeName(gargs[0]);
-                if (key != NumberType && key != StringType)
+                if (key != NumberType && key != StringType && !isKeyEnum)
                 {
-                    _context.Warnings.Add(ErrorMessages.RTW0007_InvalidDictionaryKey.Warn(key, t));
+                    Context.Warnings.Add(ErrorMessages.RTW0007_InvalidDictionaryKey.Warn(key, t));
                 }
                 var value = ResolveTypeName(gargs[1]);
-                return Cache(t, new RtDictionaryType(key, value));
+                return Cache(t, new RtDictionaryType(key, value, isKeyEnum));
             }
             if (t.IsNongenericEnumerable())
             {
@@ -270,7 +289,7 @@ namespace Reinforced.Typings
             if (typeof(MulticastDelegate)._IsAssignableFrom(t._BaseType()))
             {
                 var methodInfo = t._GetMethod("Invoke");
-                return Cache(t, ConstructFunctionType(methodInfo));
+                return Cache(t, ConstructFunctionType(methodInfo, materializedGenerics));
             }
 
 
@@ -278,7 +297,7 @@ namespace Reinforced.Typings
             {
                 var def = t.GetGenericTypeDefinition();
                 var tsFriendly = ResolveTypeNameInner(def) as RtSimpleTypeName;
-                if (tsFriendly != null && tsFriendly != AnyType)
+                if (tsFriendly != null && tsFriendly != AnyType && tsFriendly != UnknownType)
                 {
                     var parametrized = new RtSimpleTypeName(tsFriendly.TypeName,
                         t._GetGenericArguments().Select(c => ResolveTypeNameInner(c, null)).ToArray())
@@ -295,19 +314,14 @@ namespace Reinforced.Typings
                 return Cache(t, NumberType);
             }
 
-            _context.Warnings.Add(ErrorMessages.RTW0003_TypeUnknown.Warn(t.FullName));
+            Context.Warnings.Add(ErrorMessages.RTW0003_TypeUnknown.Warn(t.FullName, _anyOrUnknown));
 
-            return Cache(t, AnyType);
+            return Cache(t, _anyOrUnknown);
         }
 
-        internal void PrintCacheInfo()
+        private RtDelegateType ConstructFunctionType(MethodInfo methodInfo, Dictionary<string, RtTypeName> materializedGenerics = null)
         {
-            Console.WriteLine("Types resolving cache contains {0} entries", _resolveCache.Count);
-        }
-
-        private RtDelegateType ConstructFunctionType(MethodInfo methodInfo)
-        {
-            var retType = ResolveTypeName(methodInfo.ReturnType);
+            var retType = ResolveTypeName(methodInfo.ReturnType, materializedGenerics);
             var result = retType;
 
             var argAggreagtor = 0;
@@ -315,7 +329,7 @@ namespace Reinforced.Typings
             foreach (var parameterInfo in methodInfo.GetParameters())
             {
                 var argName = argAggreagtor > 0 ? "arg" + argAggreagtor : "arg";
-                var typeName = ResolveTypeName(parameterInfo.ParameterType);
+                var typeName = ResolveTypeName(parameterInfo.ParameterType, materializedGenerics);
                 arguments.Add(new RtArgument() { Identifier = new RtIdentifier(argName), Type = typeName });
                 argAggreagtor++;
             }

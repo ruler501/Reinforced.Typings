@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using Reinforced.Typings.Ast;
 using Reinforced.Typings.Attributes;
 using Reinforced.Typings.Xmldoc.Model;
@@ -77,7 +76,7 @@ namespace Reinforced.Typings.Generators
                     if (valueDoc != null)
                     {
                         RtJsdocNode docNode = new RtJsdocNode();
-                        if (doc.HasSummary()) docNode.Description = valueDoc.Summary.Text;
+                        if (valueDoc.HasSummary()) docNode.Description = valueDoc.Summary.Text;
                         value.Documentation = docNode;
                     }
 

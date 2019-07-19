@@ -1,4 +1,6 @@
 ﻿using System;
+using Reinforced.Typings.ReferencesInspection;
+using Reinforced.Typings.Visitors;
 
 namespace Reinforced.Typings.Fluent
 {
@@ -129,6 +131,66 @@ namespace Reinforced.Typings.Fluent
             bool typings = true)
         {
             builder.Parameters.ExportPureTypings = typings;
+            return builder;
+        }
+
+        /// <summary>
+        ///  Sets rype of <see cref="Reinforced.Typings.ReferencesInspection.ReferenceProcessorBase"/> to be used to
+        /// refilter/reorder references and imports while exporting files
+        /// </summary>
+        /// <typeparam name="T">Type of references processor to be used</typeparam>
+        /// <param name="builder">Conf builder</param>
+        /// <param name="use">When false then disables usage of references processor</param>
+        public static GlobalConfigurationBuilder WithReferencesProcessor<T>(this GlobalConfigurationBuilder builder, bool use = true)
+        where T:ReferenceProcessorBase
+        {
+            builder.Parameters.ReferencesProcessorType = use ? typeof(T) : null;
+            return builder;
+        }
+
+        /// <summary>
+        ///  Enables or disables exporting members reordering (aphabetical, constructors-fields-properties-methods).
+        ///  Warning! Enabling this option discards <see cref="MemberExportExtensions.Order(Reinforced.Typings.Fluent.MethodExportBuilder,double)"/> calls as well as "Order" member attributes property
+        /// </summary>
+        /// <param name="builder">Conf builder</param>
+        /// <param name="reorder">True to reorder exported members alphabetically, false otherwise</param>
+        public static GlobalConfigurationBuilder ReorderMembers(this GlobalConfigurationBuilder builder, bool reorder = true)
+        {
+            builder.Parameters.ReorderMembers = reorder;
+            return builder;
+        }
+
+        /// <summary>
+        ///  Sets override of type of AST visitor that will be used to write code to output.
+        /// Warning! This option overrides <see cref="ExportPureTypings"/> configuration!
+        /// </summary>
+        /// <param name="builder">Conf builder</param>
+        public static GlobalConfigurationBuilder UseVisitor<T>(this GlobalConfigurationBuilder builder)
+            where T:TextExportingVisitor
+        {
+            builder.Parameters.VisitorType = typeof(T);
+            return builder;
+        }
+
+        /// <summary>
+        ///  Tells RT to make all nullable value-type properties optional automatically
+        /// </summary>
+        /// <param name="builder">Conf builder</param>
+        /// <param name="autoOptional">True to export make all nullable-typed properties optional</param>
+        public static GlobalConfigurationBuilder AutoOptionalProperties(this GlobalConfigurationBuilder builder, bool autoOptional = true)
+        {
+            builder.Parameters.AutoOptionalProperties = autoOptional;
+            return builder;
+        }
+
+        /// <summary>
+        /// When true unresolved types will be exported as 'unknown', otherwise as 'any'
+        /// </summary>
+        /// <param name="builder">Conf builder</param>
+        /// <param name="unresolvedToUnknown">True to export unresolved types as 'unknown', false to export as 'any'</param>
+        public static GlobalConfigurationBuilder UnresolvedToUnknown(this GlobalConfigurationBuilder builder, bool unresolvedToUnknown = false)
+        {
+            builder.Parameters.UnresolvedToUnknown = unresolvedToUnknown;
             return builder;
         }
 

@@ -13,10 +13,12 @@ namespace Reinforced.Typings.Attributes
         /// </summary>
         public TsClassAttribute()
         {
+            // ReSharper disable VirtualMemberCallInConstructor
             AutoExportProperties = true;
             AutoExportMethods = true;
             IncludeNamespace = true;
             AutoExportConstructors = false;
+            // ReSharper restore VirtualMemberCallInConstructor
         }
 
         /// <summary>
@@ -43,5 +45,13 @@ namespace Reinforced.Typings.Attributes
         ///     When true, code for all constructors will be automatically generated
         /// </summary>
         public virtual bool AutoExportConstructors { get; set; }
+
+        
+
+        /// <summary>
+        /// Gets or sets whether class is being exported as abstract or not.
+        /// Null value means automatic detection
+        /// </summary>
+        public virtual bool? IsAbstract { get; set; }
     }
 }

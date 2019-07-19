@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Reinforced.Typings.Ast.Dependency;
 using Reinforced.Typings.Ast.TypeNames;
-using Reinforced.Typings.Fluent.Interfaces;
+using Reinforced.Typings.Exceptions;
 
 namespace Reinforced.Typings.Fluent
 {
@@ -11,11 +11,9 @@ namespace Reinforced.Typings.Fluent
     /// </summary>
     public class ConfigurationBuilder
     {
-        private readonly Dictionary<Type, IEnumConfigurationBuidler> _enumConfigurationBuilders =
-            new Dictionary<Type, IEnumConfigurationBuidler>();
-        
-        private readonly Dictionary<Type, ITypeConfigurationBuilder> _typeConfigurationBuilders =
-            new Dictionary<Type, ITypeConfigurationBuilder>();
+       
+        private readonly Dictionary<Type, TypeExportBuilder> _typeExportBuilders = new Dictionary<Type, TypeExportBuilder>();
+        private readonly Dictionary<Type, ThirdPartyExportBuilder> _thirdPartyBuilders = new Dictionary<Type, ThirdPartyExportBuilder>();
 
         /// <summary>
         /// Export context
@@ -42,14 +40,14 @@ namespace Reinforced.Typings.Fluent
             get { return Context.Project.Imports; }
         }
 
-        internal Dictionary<Type, ITypeConfigurationBuilder> TypeConfigurationBuilders
+        internal Dictionary<Type, TypeExportBuilder> TypeExportBuilders
         {
-            get { return _typeConfigurationBuilders; }
+            get { return _typeExportBuilders; }
         }
 
-        internal Dictionary<Type, IEnumConfigurationBuidler> EnumConfigurationBuilders
+        internal Dictionary<Type, ThirdPartyExportBuilder> ThirdPartyBuilders
         {
-            get { return _enumConfigurationBuilders; }
+            get { return _thirdPartyBuilders; }
         }
 
         internal Dictionary<Type, RtTypeName> GlobalSubstitutions
@@ -63,5 +61,35 @@ namespace Reinforced.Typings.Fluent
         }
 
         internal GlobalConfigurationBuilder GlobalBuilder { get; private set; }
+
+        internal TypeBlueprint GetCheckedBlueprint<TAttr>(Type type)
+        {
+            var bp = Context.Project.Blueprint(type);
+            if (bp.TypeAttribute != null && !typeof(TAttr)._IsAssignableFrom(bp.TypeAttribute.GetType()))
+            {
+                var name = typeof(TAttr).Name.Substring(2).Replace("Attribute", string.Empty).ToLower();
+
+                ErrorMessages.RTE0017_FluentContradict.Throw(type, name);
+            }
+
+            if (bp.ThirdParty != null)
+            {
+                var name = typeof(TAttr).Name.Substring(2).Replace("Attribute", string.Empty).ToLower();
+                ErrorMessages.RTE0018_FluentThirdParty.Throw(type, name);
+            }
+            return bp;
+        }
+
+        internal TypeBlueprint GetCheckedThirdPartyBlueprint(Type type)
+        {
+            var bp = Context.Project.Blueprint(type);
+
+            if (bp.TypeAttribute != null)
+            {
+                ErrorMessages.RTE0017_FluentContradict.Throw(type, "third party");
+            }
+
+            return bp;
+        }
     }
 }

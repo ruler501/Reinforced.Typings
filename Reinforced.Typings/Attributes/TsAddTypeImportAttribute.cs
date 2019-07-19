@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Reinforced.Typings.Ast.Dependency;
 
 namespace Reinforced.Typings.Attributes
 {
@@ -46,6 +43,14 @@ namespace Reinforced.Typings.Attributes
             ImportTarget = importTarget;
             ImportSource = importSource;
             ImportRequire = importRequire;
+        }
+
+        private RtImport _import;
+
+        internal RtImport ToImport()
+        {
+            if (_import == null) _import = new RtImport() { Target = ImportTarget, From = ImportSource, IsRequire = ImportRequire };
+            return _import;
         }
     }
 }

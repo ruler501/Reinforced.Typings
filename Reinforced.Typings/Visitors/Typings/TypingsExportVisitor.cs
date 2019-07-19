@@ -1,11 +1,12 @@
-﻿using System;
-using System.IO;
-using System.Linq;
+﻿using System.IO;
 using Reinforced.Typings.Ast;
 using Reinforced.Typings.Visitors.TypeScript;
 #pragma warning disable 1591
 namespace Reinforced.Typings.Visitors.Typings
 {
+    /// <summary>
+    /// Visitor that is generating .d.ts from existing model
+    /// </summary>
     public partial class TypingsExportVisitor : TypeScriptExportVisitor
     {
         public override void Visit(RtDecorator node)
@@ -14,7 +15,7 @@ namespace Reinforced.Typings.Visitors.Typings
         }
 
 
-        public TypingsExportVisitor(TextWriter writer, string tabulation) : base(writer, tabulation)
+        public TypingsExportVisitor(TextWriter writer, ExportContext exportContext) : base(writer, exportContext)
         {
         }
     }

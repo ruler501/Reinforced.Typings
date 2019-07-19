@@ -1,3 +1,8 @@
+What is that?
+=================
+
+Reinforced.Typings converts your .NET assemblies to TypeScript code. It integrates to VisualStudio build process and simply does its job according to configuration. Please check out [documentation](https://github.com/reinforced/Reinforced.Typings/wiki) to discover numbers of useful features (type substitutions, modules, code generators, fluent configuration, multi-file export, JSDOC). 
+
 Reinforced.Typings is available on [NuGet](https://www.nuget.org/packages/Reinforced.Typings/).
 =================
 ```sh
@@ -8,35 +13,21 @@ PM> Install-Package Reinforced.Typings
 
 News
 =================
-> :palm_tree: Version **1.4.95** released!
+> 🌴 Version **1.5.3** released
 
-* Enum string initializers
-* .NET Core 2.1 bugfix
-* Major refactoring
-* Hierarchy flattening fix
-* [Generic substitutions](https://github.com/reinforced/Reinforced.Typings/blob/master/Reinforced.Typings.Tests/SpecificCases/SpecificTestCases.GenericSubstitutions.cs) - useful thing for exporting ```Task<T>``` as promise
-* [Initialization expressions](https://github.com/reinforced/Reinforced.Typings/blob/master/Reinforced.Typings.Tests/SpecificCases/SpecificTestCases.ConstantProperties.cs) for static and const fields (use ```.With*Fields```). Reported by @masteroleary
-* Initialization expression evaluator - to automatically initialize your properties of exported classes
-
-My apologies
-----------------
-...for stupid .NET Core 2.1 bug and version bumps initiated by it. :( Seems that MS releases .NET Core versions faster than I update RT's code. I'm doing all my best to keep situation under control. I highly appreciate your patience and count on your understanding. Thanks all in advance, you are small but still the best community that I've seen.
+* Important bugfixes
 
 Support policy
 =================
 
 Please **do not** ask your questions in github issues anymore. Such format is not suitable for storing FAQ. If you have question - please go to StackOverflow and ask it there. Tag your question with [reinforced-typings](https://stackoverflow.com/questions/tagged/reinforced-typings) tag. I watch full list of questions and will answer ASAP. Make experience that you've got available for other users! 
 
-**UPD**: You can notify me about question by sending link via Twitter ([@MurcielagoCat](https://twitter.com/MurcielagoCat)) to get answer faster.
+**UPD**: You can notify me about question by sending link via Twitter ([@reinforced_sc](https://twitter.com/reinforced_sc)) to get answer faster.
 
 GitHub issues are for confirmed bugs/feature requests now. If you've found bug - please write and PR test if you can. If you have feature idea - please describe it from fluent/attribute configuration point of view. Describe how'd you gonna to configure RT for desired result. Thanks in advance!
 
-What is that?
+Best to be used for
 =================
-
-Reinforced.Typings converts your .NET assemblies to TypeScript code. It integrates to VisualStudio build process and simply does its job according to configuration. Please check out [documentation](https://github.com/reinforced/Reinforced.Typings/wiki) to discover numbers of useful features (type substitutions, modules, code generators, fluent configuration, multi-file export, JSDOC). 
-
-In a nutshell, you can use Reinforced.Typings for:
 
 Exporting ViewModels
 -----------------

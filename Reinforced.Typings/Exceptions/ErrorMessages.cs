@@ -49,7 +49,6 @@ namespace Reinforced.Typings.Exceptions
         /// </summary>
         public static readonly ErrorMessage RTE0008_FluentWithMethodError = new ErrorMessage(0008, "MethodCallExpression should be provided for .WithMethod call. Please use only lamba expressions in this place.", "Fluent configuration");
 
-
         /// <summary>
         /// Sorry, but {0} is not very good idea for parameter configuration. Try using simplier lambda expression.
         /// </summary>
@@ -84,6 +83,21 @@ namespace Reinforced.Typings.Exceptions
         /// Error when trying to locate particular property
         /// </summary>
         public static readonly ErrorMessage RTE0015_CannotFlatten = new ErrorMessage(0015, "Could not flatten hierarchy for class {0}. Hierarchy flattening must appear before .With* methods", "Hierarchy flattening");
+
+        /// <summary>
+        /// Error when trying to specify invalid references processor type
+        /// </summary>
+        public static readonly ErrorMessage RTE0016_InvalidRefProcessorType = new ErrorMessage(0016, "Type {0} does not seem to be inherit from Reinforced.Typings.ReferencesInspection.ReferenceProcessorBase type", "References processor");
+
+        /// <summary>
+        /// Contradictious export instructions: class {0} cannot be exported as {1} because it is already exported as something else
+        /// </summary>
+        public static readonly ErrorMessage RTE0017_FluentContradict = new ErrorMessage(0017, "Contradictious export instructions: class {0} cannot be exported as {1} because it is already exported as something else (probably via attributes)", "Fluent configuration");
+
+        /// <summary>
+        /// Contradictious export instructions: class {0} cannot be exported as {1} because it is already exported as something else
+        /// </summary>
+        public static readonly ErrorMessage RTE0018_FluentThirdParty = new ErrorMessage(0018, "Contradictious export instructions: class {0} is already being exported as third-party, but you try to reexport it as {1}", "Fluent configuration");
         #endregion
 
         #region Warnings
@@ -100,7 +114,7 @@ namespace Reinforced.Typings.Exceptions
         /// <summary>
         /// Could not find suitable TypeScript type for {0}. 'any' assumed.
         /// </summary>
-        public static readonly ErrorMessage RTW0003_TypeUnknown = new ErrorMessage(0003, "Could not find suitable TypeScript type for {0}. 'any' assumed.", "Type resolvation");
+        public static readonly ErrorMessage RTW0003_TypeUnknown = new ErrorMessage(0003, "Could not find suitable TypeScript type for {0}. '{1}' assumed.", "Type resolvation");
 
         /// <summary>
         /// No suitable base constructor found for {0}. Generating 'super' call with all nulls.

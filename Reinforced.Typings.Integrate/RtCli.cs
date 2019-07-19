@@ -14,7 +14,7 @@ namespace Reinforced.Typings.Cli
     {
         internal static PropertyInfo[] _GetProperties(this Type t, BindingFlags flags)
         {
-#if NETSTANDARD15
+#if NETCORE
             return t.GetTypeInfo().GetProperties(flags);
 #else
             return t.GetProperties(flags);
@@ -34,8 +34,12 @@ namespace Reinforced.Typings.Integrate
         /// <summary>
         /// Framework version to invoke rtcli
         /// </summary>
-        [Required]
         public string TargetFramework { get; set; }
+
+        /// <summary>
+        /// Forced usage of target framework
+        /// </summary>
+        public string RtForceTargetFramework { get; set; }
 
         /// <summary>
         /// Package's "build" directory
@@ -101,7 +105,7 @@ namespace Reinforced.Typings.Integrate
         {
             if (IsCore)
             {
-#if NETCORE1
+#if NETCORE
                 return
                     RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
                     "dotnet.exe"
@@ -123,19 +127,21 @@ namespace Reinforced.Typings.Integrate
 
         private string NormalizeFramework()
         {
-            if (string.IsNullOrEmpty(TargetFramework)) return "net45";
+            if (!string.IsNullOrEmpty(RtForceTargetFramework)) return RtForceTargetFramework;
+            if (string.IsNullOrEmpty(TargetFramework))
+#if NETCORE
+                return "netcoreapp2.0";
+#else
+                return "net45";
+#endif
+
             if (TargetFramework.StartsWith("netstandard"))
             {
                 var version = int.Parse(TargetFramework.Substring("netstandard".Length)[0].ToString());
                 if (version == 1) return "netcoreapp1.0";
                 return "netcoreapp2.0";
             }
-            if (TargetFramework.StartsWith("netcoreapp"))
-            {
-                var version = int.Parse(TargetFramework.Substring("netcoreapp".Length)[0].ToString());
-                if (version == 1) return "netcoreapp1.0";
-                return TargetFramework;
-            }
+            if (TargetFramework.StartsWith("netcoreapp")) return TargetFramework;
 
             if (TargetFramework.StartsWith("net46")) return "net461";
             return TargetFramework;
@@ -145,9 +151,10 @@ namespace Reinforced.Typings.Integrate
         {
             get
             {
-                if (string.IsNullOrEmpty(TargetFramework)) return false;
-                if (TargetFramework.StartsWith("netstandard")) return true;
-                if (TargetFramework.StartsWith("netcoreapp")) return true;
+                var fw = NormalizeFramework();
+                if (string.IsNullOrEmpty(fw)) return false;
+                if (fw.StartsWith("netstandard")) return true;
+                if (fw.StartsWith("netcoreapp")) return true;
                 return false;
             }
         }
@@ -159,7 +166,7 @@ namespace Reinforced.Typings.Integrate
             {
                 if (IsCore)
                 {
-#if NETCORE1
+#if NETCORE
                     return
                         RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
                             "dotnet.exe"
@@ -182,7 +189,7 @@ namespace Reinforced.Typings.Integrate
                 ReferencesTmpFilePath = string.Empty,
                 SourceAssemblies = ExtractSourceAssemblies(),
                 DocumentationFilePath = DocumentationFilePath.EndsWith(".xml",
-#if NETCORE1
+#if NETCORE
                 StringComparison.CurrentCultureIgnoreCase
 #else
                 StringComparison.InvariantCultureIgnoreCase

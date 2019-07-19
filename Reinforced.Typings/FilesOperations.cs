@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
+using Reinforced.Typings.Ast.Dependency;
 using Reinforced.Typings.Exceptions;
+using Reinforced.Typings.ReferencesInspection;
+using Reinforced.Typings.Visitors;
 using Reinforced.Typings.Visitors.TypeScript;
 using Reinforced.Typings.Visitors.Typings;
 
@@ -38,22 +40,17 @@ namespace Reinforced.Typings
 
         protected virtual void ExportCore(StreamWriter tw, ExportedFile file)
         {
-            var visitor = Context.Global.ExportPureTypings ? new TypingsExportVisitor(tw, Context.Global.TabSymbol) : new TypeScriptExportVisitor(tw, Context.Global.TabSymbol);
-            WriteWarning(tw);
-            foreach (var rtReference in file.References.References)
-            {
-                visitor.Visit(rtReference);
-            }
 
-            foreach (var rtImport in file.References.Imports)
-            {
-                visitor.Visit(rtImport);
-            }
-            if (file.References.References.Any() || file.References.Imports.Any()) tw.WriteLine();
-            foreach (var fileNamespace in file.Namespaces)
-            {
-                visitor.Visit(fileNamespace);
-            }
+            var visitor =
+                Context.Global.VisitorType == null
+                    ? Context.Global.ExportPureTypings
+                        ? new TypingsExportVisitor(tw, Context)
+                        : new TypeScriptExportVisitor(tw, Context)
+                    : (TextExportingVisitor) Activator.CreateInstance(Context.Global.VisitorType, new object[] { tw, Context });
+
+            WriteWarning(tw);
+
+            visitor.VisitFile(file);
         }
 
         public void Export(string fileName, ExportedFile file)

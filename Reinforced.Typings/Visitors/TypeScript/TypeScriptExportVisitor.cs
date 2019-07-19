@@ -3,23 +3,26 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Reinforced.Typings.Ast;
-using Reinforced.Typings.Ast.Dependency;
 using Reinforced.Typings.Ast.TypeNames;
 #pragma warning disable 1591
 
 namespace Reinforced.Typings.Visitors.TypeScript
 {
-    
+    /// <summary>
+    /// Visitor that generates TypeScript code (.ts) from existing model
+    /// </summary>
     public partial class TypeScriptExportVisitor : TextExportingVisitor
     {
         protected WriterContext Context { get; set; }
 
-        public TypeScriptExportVisitor(TextWriter writer, string tabulation)
-            : base(writer,tabulation)
-        {
-            Context = WriterContext.None;
-        }
+        
 
+        
+
+        /// <summary>
+        /// Writes modifiers for type member
+        /// </summary>
+        /// <param name="member">Type member</param>
         protected void Modifiers(RtMember member)
         {
             if (member.AccessModifier != null)
@@ -35,7 +38,7 @@ namespace Reinforced.Typings.Visitors.TypeScript
 
         protected void Decorators(IDecoratable member)
         {
-            foreach (var memberDecorator in member.Decorators.OrderBy(c=>c.Order))
+            foreach (var memberDecorator in member.Decorators.OrderBy(c => c.Order))
             {
                 Visit(memberDecorator);
             }
@@ -78,7 +81,11 @@ namespace Reinforced.Typings.Visitors.TypeScript
         }
         #endregion
 
-        private void EmptyBody(RtTypeName returnType)
+        /// <summary>
+        /// Writes empty method body of known return type
+        /// </summary>
+        /// <param name="returnType">Method return type</param>
+        protected void EmptyBody(RtTypeName returnType)
         {
             if (returnType == null || returnType.IsVoid())
             {
@@ -90,7 +97,11 @@ namespace Reinforced.Typings.Visitors.TypeScript
             }
         }
 
-        private void CodeBlock(string content)
+        /// <summary>
+        /// Writes code block with correct tabulation
+        /// </summary>
+        /// <param name="content">Code content</param>
+        protected void CodeBlock(string content)
         {
             Br();
             AppendTabs();
@@ -102,7 +113,11 @@ namespace Reinforced.Typings.Visitors.TypeScript
             WriteLine("}");
         }
 
-        private void CodeBlock(RtRaw content)
+        /// <summary>
+        /// Writes AST node as code block with correct tabulation
+        /// </summary>
+        /// <param name="content">Code content</param>
+        protected void CodeBlock(RtRaw content)
         {
             Br();
             AppendTabs();
@@ -114,6 +129,12 @@ namespace Reinforced.Typings.Visitors.TypeScript
             WriteLine("}");
         }
 
+        /// <summary>
+        /// Performs sequential visiting of AST nodes inserting separator in between
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="nodes">Nodes to visit</param>
+        /// <param name="separator">Seperator string</param>
         protected void SequentialVisit<T>(IEnumerable<T> nodes, string separator)
             where T : RtNode
         {
@@ -128,10 +149,54 @@ namespace Reinforced.Typings.Visitors.TypeScript
 
         public override void Visit(RtDecorator node)
         {
-            if (node==null) return;
+            if (node == null) return;
             Write("@");
             Write(node.Decorator);
             Write(" ");
+        }
+
+        private bool IsKnownMember(RtNode n)
+        {
+            if (n is RtConstructor) return true;
+            if (n is RtField) return true;
+            if (n is RtFuncion) return true;
+            return false;
+        }
+
+        private IEnumerable<RtNode> DoNodesOrder(List<RtNode> nodes)
+        {
+            var constructors = nodes.Where(d => d is RtConstructor).OfType<RtConstructor>();
+            var fields = nodes.Where(d => d is RtField).OfType<RtField>().OrderBy(d => d.Identifier.IdentifierName);
+            var methods = nodes.Where(d => d is RtFuncion).OfType<RtFuncion>().OrderBy(d => d.Identifier.IdentifierName);
+            var rest = nodes.Where(d => !IsKnownMember(d));
+
+            return constructors.Cast<RtNode>()
+                    .Union(fields)
+                    .Union(methods)
+                    .Union(rest);
+        }
+
+        protected IEnumerable<RtNode> DoSortMembers(List<RtNode> nodes)
+        {
+            if (ExportContext.Global.ReorderMembers)
+            {
+                return DoNodesOrder(nodes);
+            }
+            else
+            {
+                if (nodes.Any(d => d._order != 0))
+                    return nodes.OrderBy(c =>
+                        c is RtConstructor
+                            ? int.MinValue
+                            : c._order);
+                return nodes;
+
+            }
+        }
+
+        public TypeScriptExportVisitor(TextWriter writer, ExportContext exportContext) : base(writer, exportContext)
+        {
+            Context = WriterContext.None;
         }
     }
 

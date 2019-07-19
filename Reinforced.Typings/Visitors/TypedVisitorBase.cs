@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Reinforced.Typings.Ast;
 using Reinforced.Typings.Ast.Dependency;
 using Reinforced.Typings.Ast.TypeNames;
@@ -57,5 +53,6 @@ namespace Reinforced.Typings.Visitors
         public abstract T Visit(RtReference node);
         
         public abstract T Visit(RtTuple node);
+        public abstract T VisitFile(ExportedFile file);
     }
 }

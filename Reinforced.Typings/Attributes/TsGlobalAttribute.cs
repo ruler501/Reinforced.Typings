@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Reinforced.Typings.Fluent;
+
 
 namespace Reinforced.Typings.Attributes
 {
@@ -78,6 +76,28 @@ namespace Reinforced.Typings.Attributes
         public double Priority { get; set; }
 
         /// <summary>
+        /// Type of <see cref="Reinforced.Typings.ReferencesInspection.ReferenceProcessorBase"/> to be used to
+        /// refilter/reorder references and imports while exporting files
+        /// </summary>
+        public Type ReferenceProcessorType { get; set; }
+
+        /// <summary>
+        ///  Gets or sets whether members reordering (aphabetical, constructors-fields-properties-methods) is enabled
+        ///  Warning! Enabling this option discards <see cref="MemberExportExtensions.Order(Reinforced.Typings.Fluent.MethodExportBuilder,double)"/> calls as well as "Order" member attributes property
+        /// </summary>
+        public bool ReorderMembers { get; set; }
+
+        /// <summary>
+        /// Gets or sets whether all nullable properties must be exported as optional
+        /// </summary>
+        public bool AutoOptionalProperties { get; set; }
+
+        /// <summary>
+        /// When true unresolved types will be exported as 'unknown', otherwise as 'any'
+        /// </summary>
+        public bool UnresolvedToUnknown { get; set; }
+
+        /// <summary>
         /// Default constructor for TsGlobal attribute
         /// </summary>
         public TsGlobalAttribute()
@@ -85,5 +105,11 @@ namespace Reinforced.Typings.Attributes
             WriteWarningComment = true;
             TabSymbol = "\t";
         }
+
+        /// <summary>
+        /// Gets or sets type of AST visitor that will be used to write code to output.
+        /// Visitor has to be child class of <see cref="Reinforced.Typings.Visitors.TextExportingVisitor"/>
+        /// </summary>
+        public Type VisitorType { get; set; }
     }
 }

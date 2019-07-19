@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
 namespace Reinforced.Typings.Ast
 {
@@ -25,6 +21,11 @@ namespace Reinforced.Typings.Ast
         /// Value value
         /// </summary>
         public string EnumValue { get; set; }
+
+        /// <summary>
+        /// Gets or sets line that will follow after member
+        /// </summary>
+        public string LineAfter { get; set; }
 
         /// <inheritdoc />
         public override IEnumerable<RtNode> Children
